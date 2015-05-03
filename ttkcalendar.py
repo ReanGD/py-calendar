@@ -40,6 +40,9 @@ class Calendar(ttk.Frame):
         locale = kw.pop('locale', None)
         sel_bg = kw.pop('selectbackground', '#ecffc4')
         sel_fg = kw.pop('selectforeground', '#05640e')
+        self._draw_button = kw.pop('draw_button', True)
+        self._on_next_month = kw.pop('on_next_month', None)
+        self._on_prev_month = kw.pop('on_prev_month', None)
 
         self._date = self.datetime(year, month, 1)
         self._selection = None # no date selected
@@ -96,17 +99,20 @@ class Calendar(ttk.Frame):
     def __place_widgets(self):
         # header frame and its widgets
         hframe = ttk.Frame(self)
-        lbtn = ttk.Button(hframe, style='L.TButton', command=self._prev_month)
-        rbtn = ttk.Button(hframe, style='R.TButton', command=self._next_month)
+        if self._draw_button:
+            lbtn = ttk.Button(hframe, style='L.TButton', command=self._prev_month)
+            rbtn = ttk.Button(hframe, style='R.TButton', command=self._next_month)
         self._header = ttk.Label(hframe, width=15, anchor='center')
         # the calendar
         self._calendar = ttk.Treeview(show='', selectmode='none', height=7)
 
         # pack the widgets
         hframe.pack(in_=self, side='top', pady=4, anchor='center')
-        lbtn.grid(in_=hframe)
+        if self._draw_button:
+            lbtn.grid(in_=hframe)
         self._header.grid(in_=hframe, column=1, row=0, padx=12)
-        rbtn.grid(in_=hframe, column=2, row=0)
+        if self._draw_button:
+            rbtn.grid(in_=hframe, column=2, row=0)
         self._calendar.pack(in_=self, expand=1, fill='both', side='bottom')
 
     def __config_calendar(self):
@@ -149,6 +155,12 @@ class Calendar(ttk.Frame):
             week = cal[indx] if indx < len(cal) else []
             fmt_week = [('%02d' % day) if day else '' for day in week]
             self._calendar.item(item, values=fmt_week)
+
+    def goto_prev_month(self):
+        self._prev_month()
+
+    def goto_next_month(self):
+        self._next_month()
 
     def _show_selection(self, text, bbox):
         """Configure canvas for a new selection."""
@@ -198,6 +210,8 @@ class Calendar(ttk.Frame):
         self._date = self._date - self.timedelta(days=1)
         self._date = self.datetime(self._date.year, self._date.month, 1)
         self._build_calendar() # reconstuct calendar
+        if self._on_prev_month:
+            self._on_prev_month()
 
     def _next_month(self):
         """Update calendar to show the next month."""
@@ -208,6 +222,8 @@ class Calendar(ttk.Frame):
             days=calendar.monthrange(year, month)[1] + 1)
         self._date = self.datetime(self._date.year, self._date.month, 1)
         self._build_calendar() # reconstruct calendar
+        if self._on_next_month:
+            self._on_next_month()
 
     # Properties
 
