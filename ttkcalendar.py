@@ -112,7 +112,7 @@ class Calendar(ttk.Frame):
             canvas.text = canvas.create_text(0, 0, fill=sel_fg, anchor='w')
             canvas.bind('<ButtonPress-1>', lambda evt: canvas.place_forget())
             col.bind('<Configure>', lambda evt: canvas.place_forget())
-            col.bind('<ButtonPress-1>', lambda evt: self._pressed1(icol, evt))
+            col.bind('<ButtonPress-1>', self._pressed)
 
     def __minsize(self, evt):
         width, height = self._calendar_box.master.geometry().split('x')
@@ -135,13 +135,7 @@ class Calendar(ttk.Frame):
             for icol, col in enumerate(self._calendar_cols):
                 col.item(self._calendar_items[icol][iweek], values=fmt_week[icol])
 
-    def goto_prev_month(self):
-        self._prev_month()
-
-    def goto_next_month(self):
-        self._next_month()
-
-    def _show_selection(self, icol, text, bbox, widget):
+    def _show_selection(self, text, bbox, widget):
         """Configure canvas for a new selection."""
         x, y, width, height = bbox
 
@@ -155,13 +149,14 @@ class Calendar(ttk.Frame):
 
     # Callbacks
 
-    def _pressed1(self, icol, evt):
+    def _pressed(self, evt):
         """Clicked somewhere in the calendar."""
         x, y, widget = evt.x, evt.y, evt.widget
         item = widget.identify_row(y)
         column = widget.identify_column(x)
 
-        if not column or not item in self._calendar_items[icol]:
+        if not column:
+            # or not item in self._calendar_items[icol]:
             # clicked in the weekdays row or just outside the columns
             return
 
@@ -180,7 +175,7 @@ class Calendar(ttk.Frame):
         # update and then show selection
         text = '%02d' % text
         # self._selection = (text, item, column)
-        self._show_selection(icol, text, bbox, widget)
+        self._show_selection(text, bbox, widget)
 
     def _prev_month(self):
         """Updated calendar to show the previous month."""
