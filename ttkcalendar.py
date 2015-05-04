@@ -93,8 +93,9 @@ class Calendar(ttk.Frame):
         arrow_layout = lambda dir: (
             [('Button.focus', {'children': [('Button.%sarrow' % dir, None)]})]
         )
-        style.layout('L.TButton', arrow_layout('left'))
-        style.layout('R.TButton', arrow_layout('right'))
+        if self._draw_button:
+            style.layout('L.TButton', arrow_layout('left'))
+            style.layout('R.TButton', arrow_layout('right'))
 
     def __place_widgets(self):
         # header frame and its widgets
@@ -110,9 +111,10 @@ class Calendar(ttk.Frame):
         hframe.pack(in_=self, side='top', pady=4, anchor='center')
         if self._draw_button:
             lbtn.grid(in_=hframe)
-        self._header.grid(in_=hframe, column=1, row=0, padx=12)
-        if self._draw_button:
+            self._header.grid(in_=hframe, column=1, row=0, padx=12)
             rbtn.grid(in_=hframe, column=2, row=0)
+        else:
+            self._header.grid(in_=hframe, column=1, row=0, padx=22)
         self._calendar.pack(in_=self, expand=1, fill='both', side='bottom')
 
     def __config_calendar(self):
