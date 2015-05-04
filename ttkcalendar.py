@@ -9,6 +9,64 @@ except ImportError: # py3k
 
 import ttk
 
+class CalendarColumn(ttk.Treeview):
+    items_cnt = 6
+    def __init__(self, master):
+        ttk.Treeview.__init__(self, master, height=7, selectmode='none', show='')
+        self.pack(side=Tkinter.LEFT, fill=Tkinter.BOTH, expand=True)
+        self.items = []
+
+    def config(self, name, header_bg, width):
+        self['columns'] = name
+        self.tag_configure('header', background=header_bg)
+        self.insert('', 'end', values=[name], tag='header')
+        self.items = [self.insert('', 'end', values='') for _ in range(CalendarColumn.items_cnt)]
+        self.column(name, minwidth=width, width=width, anchor='e')
+
+    def setup_selection(self, sel_bg, sel_fg, btn1_press_callback):
+        self.canvas = canvas = Tkinter.Canvas(self, background=sel_bg, borderwidth=0, highlightthickness=0)
+        canvas.text = canvas.create_text(0, 0, fill=sel_fg, anchor='w')
+        canvas.bind('<ButtonPress-1>', lambda evt: canvas.place_forget())
+        self.bind('<Configure>', lambda evt: canvas.place_forget())
+        self.bind('<ButtonPress-1>', btn1_press_callback)
+
+    def _show_selection(self, text, bbox, font):
+        x, y, width, height = bbox
+
+        textw = font.measure(text)
+
+        canvas = self.canvas
+        canvas.configure(width=width, height=height)
+        canvas.coords(canvas.text, width - textw, height / 2 - 1)
+        canvas.itemconfigure(canvas.text, text=text)
+        canvas.place(in_=self, x=x, y=y)
+
+    def on_pressed(self, evt, font):
+        x, y = evt.x, evt.y
+        item = self.identify_row(y)
+        column = self.identify_column(x)
+
+        if not column or not item in self.items:
+            # clicked in the weekdays row or just outside the columns
+            return
+
+        item_values = self.item(item)['values']
+        if not len(item_values): # row is empty for this month
+            return
+
+        text = item_values[int(column[1]) - 1]
+        if not text: # date is empty
+            return
+
+        bbox = self.bbox(item, column)
+        if not bbox: # calendar not visible yet
+            return
+
+        # update and then show selection
+        text = '%02d' % text
+        # self._selection = (text, item, column)
+        self._show_selection(text, bbox, font)
+
 def get_calendar(locale, fwday):
     if locale is None:
         return calendar.TextCalendar(fwday)
@@ -73,11 +131,7 @@ class Calendar(ttk.Frame):
         self._header = ttk.Label(hframe, width=15, anchor='center')
         # the calendar
         self._calendar_box = ttk.Treeview(show='', selectmode='none', height=7)
-        self._calendar_cols = []
-        for _ in range(7):
-            col = ttk.Treeview(master=self._calendar_box, height=7, selectmode='none', show='')
-            col.pack(side = Tkinter.LEFT, fill = Tkinter.BOTH, expand = True)
-            self._calendar_cols.append(col)
+        self._calendar_cols = [CalendarColumn(self._calendar_box) for _ in range(7)]
 
         # pack the widgets
         hframe.pack(in_=self, side='top', pady=4, anchor='center')
@@ -90,29 +144,16 @@ class Calendar(ttk.Frame):
         self._calendar_box.pack(in_=self, expand=1, fill='both', side='bottom')
 
     def __config_calendar(self):
-        cols = self._cal.formatweekheader(3).split()
         font = tkFont.Font()
+        cols = self._cal.formatweekheader(3).split()
         maxwidth = max(font.measure(col) for col in cols)
-        self._calendar_items = []
         for i, col in enumerate(self._calendar_cols):
-            name = cols[i]
-            col['columns'] = name
-            col.tag_configure('header', background='grey90')
-            col.insert('', 'end', values=[name], tag='header')
-            self._calendar_items.append([col.insert('', 'end', values='') for _ in range(6)])
-            col.column(name, minwidth=maxwidth, width=maxwidth, anchor='e')
+            col.config(cols[i], 'grey90', maxwidth)
 
     def __setup_selection(self, sel_bg, sel_fg):
         self._font = tkFont.Font()
-        self._canvas_cols = []
-        for icol, col in enumerate(self._calendar_cols):
-            canvas = Tkinter.Canvas(col, background=sel_bg, borderwidth=0, highlightthickness=0)
-            col.bind_canvas = canvas
-            self._canvas_cols.append(canvas)
-            canvas.text = canvas.create_text(0, 0, fill=sel_fg, anchor='w')
-            canvas.bind('<ButtonPress-1>', lambda evt: canvas.place_forget())
-            col.bind('<Configure>', lambda evt: canvas.place_forget())
-            col.bind('<ButtonPress-1>', self._pressed)
+        for col in self._calendar_cols:
+            col.setup_selection(sel_bg, sel_fg, self._pressed)
 
     def __minsize(self, evt):
         width, height = self._calendar_box.master.geometry().split('x')
@@ -128,59 +169,23 @@ class Calendar(ttk.Frame):
 
         # update calendar shown dates
         weeks = self._cal.monthdayscalendar(year, month)
-        items_cnt = len(self._calendar_items[0])
-        for iweek in range(items_cnt):
+        for iweek in range(CalendarColumn.items_cnt):
             week = weeks[iweek] if iweek < len(weeks) else [0] * 7
             fmt_week = [('%02d' % day) if day > 0 else '' for day in week]
             for icol, col in enumerate(self._calendar_cols):
-                col.item(self._calendar_items[icol][iweek], values=fmt_week[icol])
-
-    def _show_selection(self, text, bbox, widget):
-        """Configure canvas for a new selection."""
-        x, y, width, height = bbox
-
-        textw = self._font.measure(text)
-
-        canvas = widget.bind_canvas
-        canvas.configure(width=width, height=height)
-        canvas.coords(canvas.text, width - textw, height / 2 - 1)
-        canvas.itemconfigure(canvas.text, text=text)
-        canvas.place(in_=widget, x=x, y=y)
+                col.item(col.items[iweek], values=fmt_week[icol])
 
     # Callbacks
 
     def _pressed(self, evt):
-        """Clicked somewhere in the calendar."""
-        x, y, widget = evt.x, evt.y, evt.widget
-        item = widget.identify_row(y)
-        column = widget.identify_column(x)
-
-        if not column:
-            # or not item in self._calendar_items[icol]:
-            # clicked in the weekdays row or just outside the columns
-            return
-
-        item_values = widget.item(item)['values']
-        if not len(item_values): # row is empty for this month
-            return
-
-        text = item_values[int(column[1]) - 1]
-        if not text: # date is empty
-            return
-
-        bbox = widget.bbox(item, column)
-        if not bbox: # calendar not visible yet
-            return
-
-        # update and then show selection
-        text = '%02d' % text
-        # self._selection = (text, item, column)
-        self._show_selection(text, bbox, widget)
+        for col in self._calendar_cols:
+            col.canvas.place_forget()
+        evt.widget.on_pressed(evt, self._font)
 
     def _prev_month(self):
         """Updated calendar to show the previous month."""
-        for canvas in self._canvas_cols:
-            canvas.place_forget()
+        for col in self._calendar_cols:
+            col.canvas.place_forget()
 
         self._date = self._date - self.timedelta(days=1)
         self._date = self.datetime(self._date.year, self._date.month, 1)
@@ -190,8 +195,8 @@ class Calendar(ttk.Frame):
 
     def _next_month(self):
         """Update calendar to show the next month."""
-        for canvas in self._canvas_cols:
-            canvas.place_forget()
+        for col in self._calendar_cols:
+            col.canvas.place_forget()
 
         year, month = self._date.year, self._date.month
         self._date = self._date + self.timedelta(
