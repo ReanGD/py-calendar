@@ -27,27 +27,9 @@ class OrgCaledar(Tkinter.Tk):
                   "year": today.year,
                   "locale": locale.getdefaultlocale()}
     
-        self.cal0 = ttkcalendar.Calendar(draw_button=False, **kwargs)
-        self.cal0.goto_prev_month()
-        self.cal1 = ttkcalendar.Calendar(draw_button=True,
-                                         on_next_month=self.__on_next_month,
-                                         on_prev_month=self.__on_prev_month,
-                                         **kwargs)
-        self.cal2 = ttkcalendar.Calendar(draw_button=False, **kwargs)
-        self.cal2.goto_next_month()
+        self.cal = ttkcalendar.Calendar(draw_button=True, **kwargs)
 
-        self.cal0.grid(row=0,column=0)
-        self.cal1.grid(row=0,column=1)
-        self.cal2.grid(row=0,column=2)
-
-    def __on_next_month(self):
-        self.cal0.goto_next_month()
-        self.cal2.goto_next_month()
-
-    def __on_prev_month(self):
-        self.cal0.goto_prev_month()
-        self.cal2.goto_prev_month()
-
+        self.cal.grid(row=0,column=1)
 
 def main():
     import sys
