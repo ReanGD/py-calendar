@@ -8,13 +8,12 @@ except ImportError: # py3k
     import tkinter.font as tkFont
 
 import ttk
-
+    
 class CalendarColumn(ttk.Treeview):
     items_cnt = 6
     def __init__(self, master):
         ttk.Treeview.__init__(self, master, height=7, selectmode='none', show='')
         self.pack(side=Tkinter.LEFT, fill=Tkinter.BOTH, expand=True)
-        self.items = []
 
     def config(self, name, header_bg, width):
         self['columns'] = name
@@ -67,6 +66,30 @@ class CalendarColumn(ttk.Treeview):
         # self._selection = (text, item, column)
         self._show_selection(text, bbox, font)
 
+class CalendarMonth(ttk.Treeview):
+    def __init__(self, master):
+        ttk.Treeview.__init__(self, show='', selectmode='none', height=7)
+        self._cols = [CalendarColumn(self) for _ in range(7)]
+        self.pack(in_=master, expand=1, fill='both', side='bottom')
+
+    def config(self, cal, font, header_bg, sel_bg, sel_fg, btn1_press_callback):
+        cols = cal.formatweekheader(3).split()
+        maxwidth = max(font.measure(col) for col in cols)
+        for i, col in enumerate(self._cols):
+            col.config(cols[i], header_bg, maxwidth)
+            col.setup_selection(sel_bg, sel_fg, btn1_press_callback)
+
+    def build(self, weeks):
+        for iweek in range(CalendarColumn.items_cnt):
+            week = weeks[iweek] if iweek < len(weeks) else [0] * 7
+            fmt_week = [('%02d' % day) if day > 0 else '' for day in week]
+            for icol, col in enumerate(self._cols):
+                col.item(col.items[iweek], values=fmt_week[icol])
+
+    def remove_selection(self):
+        for col in self._cols:
+            col.canvas.place_forget()
+
 def get_calendar(locale, fwday):
     if locale is None:
         return calendar.TextCalendar(fwday)
@@ -103,9 +126,8 @@ class Calendar(ttk.Frame):
 
         self.__setup_styles()       # creates custom styles
         self.__place_widgets()      # pack/grid used widgets
-        self.__config_calendar()    # adjust calendar columns and setup tags
-        # configure a canvas, and proper bindings, for selecting dates
-        self.__setup_selection(sel_bg, sel_fg)
+        self._font = tkFont.Font()
+        self._calendar_box.config(self._cal, self._font, 'grey90', sel_bg, sel_fg, self._pressed)
         self._build_calendar()
 
         # set the minimal size for the widget
@@ -129,10 +151,6 @@ class Calendar(ttk.Frame):
             lbtn = ttk.Button(hframe, style='L.TButton', command=self._prev_month)
             rbtn = ttk.Button(hframe, style='R.TButton', command=self._next_month)
         self._header = ttk.Label(hframe, width=15, anchor='center')
-        # the calendar
-        self._calendar_box = ttk.Treeview(show='', selectmode='none', height=7)
-        self._calendar_cols = [CalendarColumn(self._calendar_box) for _ in range(7)]
-
         # pack the widgets
         hframe.pack(in_=self, side='top', pady=4, anchor='center')
         if self._draw_button:
@@ -141,19 +159,7 @@ class Calendar(ttk.Frame):
             rbtn.grid(in_=hframe, column=2, row=0)
         else:
             self._header.grid(in_=hframe, column=1, row=0, padx=22)
-        self._calendar_box.pack(in_=self, expand=1, fill='both', side='bottom')
-
-    def __config_calendar(self):
-        font = tkFont.Font()
-        cols = self._cal.formatweekheader(3).split()
-        maxwidth = max(font.measure(col) for col in cols)
-        for i, col in enumerate(self._calendar_cols):
-            col.config(cols[i], 'grey90', maxwidth)
-
-    def __setup_selection(self, sel_bg, sel_fg):
-        self._font = tkFont.Font()
-        for col in self._calendar_cols:
-            col.setup_selection(sel_bg, sel_fg, self._pressed)
+        self._calendar_box = CalendarMonth(self)
 
     def __minsize(self, evt):
         width, height = self._calendar_box.master.geometry().split('x')
@@ -169,24 +175,17 @@ class Calendar(ttk.Frame):
 
         # update calendar shown dates
         weeks = self._cal.monthdayscalendar(year, month)
-        for iweek in range(CalendarColumn.items_cnt):
-            week = weeks[iweek] if iweek < len(weeks) else [0] * 7
-            fmt_week = [('%02d' % day) if day > 0 else '' for day in week]
-            for icol, col in enumerate(self._calendar_cols):
-                col.item(col.items[iweek], values=fmt_week[icol])
+        self._calendar_box.build(weeks)
 
     # Callbacks
 
     def _pressed(self, evt):
-        for col in self._calendar_cols:
-            col.canvas.place_forget()
+        self._calendar_box.remove_selection()
         evt.widget.on_pressed(evt, self._font)
 
     def _prev_month(self):
         """Updated calendar to show the previous month."""
-        for col in self._calendar_cols:
-            col.canvas.place_forget()
-
+        self._calendar_box.remove_selection()
         self._date = self._date - self.timedelta(days=1)
         self._date = self.datetime(self._date.year, self._date.month, 1)
         self._build_calendar() # reconstuct calendar
@@ -195,9 +194,7 @@ class Calendar(ttk.Frame):
 
     def _next_month(self):
         """Update calendar to show the next month."""
-        for col in self._calendar_cols:
-            col.canvas.place_forget()
-
+        self._calendar_box.remove_selection()
         year, month = self._date.year, self._date.month
         self._date = self._date + self.timedelta(
             days=calendar.monthrange(year, month)[1] + 1)
