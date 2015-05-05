@@ -21,7 +21,7 @@ class CalendarColumn(ttk.Treeview):
         ttk.Treeview.__init__(self, master, height=7, selectmode='none', show='')
         self.pack(side=Tkinter.LEFT, fill=Tkinter.BOTH, expand=True)
 
-    def config(self, name, config, width, btn1_press_callback):
+    def config(self, name, config, width, font):
         self['columns'] = name
         self.tag_configure('header', background=config.header_bg)
         self.insert('', 'end', values=[name], tag='header')
@@ -33,22 +33,23 @@ class CalendarColumn(ttk.Treeview):
                                 highlightthickness=0)
         canvas.text = canvas.create_text(0, 0, fill=config.select_fg, anchor='w')
         canvas.bind('<ButtonPress-1>', lambda evt: canvas.place_forget())
-        self.canvas = canvas
         self.bind('<Configure>', lambda evt: canvas.place_forget())
-        self.bind('<ButtonPress-1>', btn1_press_callback)
+        self.bind('<ButtonPress-1>', self._on_click)
+        self._font = font
+        self._canvas = canvas
 
-    def _show_selection(self, text, bbox, font):
+    def _show_selection(self, text, bbox):
         x, y, width, height = bbox
 
-        textw = font.measure(text)
+        textw = self._font.measure(text)
 
-        canvas = self.canvas
+        canvas = self._canvas
         canvas.configure(width=width, height=height)
         canvas.coords(canvas.text, width - textw, height / 2 - 1)
         canvas.itemconfigure(canvas.text, text=text)
         canvas.place(in_=self, x=x, y=y)
 
-    def on_pressed(self, evt, font):
+    def _on_click(self, evt):
         x, y = evt.x, evt.y
         item = self.identify_row(y)
         column = self.identify_column(x)
@@ -69,10 +70,8 @@ class CalendarColumn(ttk.Treeview):
         if not bbox: # calendar not visible yet
             return
 
-        # update and then show selection
-        text = '%02d' % text
-        # self._selection = (text, item, column)
-        self._show_selection(text, bbox, font)
+        self.master.remove_selection()
+        self._show_selection('%02d' % text, bbox)
 
 class CalendarMonth(ttk.Treeview):
     def __init__(self, master):
@@ -80,11 +79,11 @@ class CalendarMonth(ttk.Treeview):
         self._cols = [CalendarColumn(self) for _ in range(7)]
         self.pack(in_=master, expand=1, fill='both', side='bottom')
 
-    def config(self, cal, font, config, btn1_press_callback):
+    def config(self, cal, font, config):
         cols = cal.formatweekheader(3).split()
         maxwidth = max(font.measure(col) for col in cols)
         for i, col in enumerate(self._cols):
-            col.config(cols[i], config, maxwidth, btn1_press_callback)
+            col.config(cols[i], config, maxwidth, font)
 
     def build(self, weeks):
         for iweek in range(CalendarColumn.items_cnt):
@@ -133,11 +132,11 @@ class Calendar(ttk.Frame):
         self.__setup_styles()       # creates custom styles
         self.__place_widgets()      # pack/grid used widgets
         self._font = tkFont.Font()
-        self._calendar_box.config(self._cal, self._font, self._config, self._pressed)
+        self._calendar.config(self._cal, self._font, self._config)
         self._build_calendar()
 
         # set the minimal size for the widget
-        self._calendar_box.bind('<Map>', self.__minsize)
+        self._calendar.bind('<Map>', self.__minsize)
 
     def __setup_styles(self):
         # custom ttk styles
@@ -165,12 +164,12 @@ class Calendar(ttk.Frame):
             rbtn.grid(in_=hframe, column=2, row=0)
         else:
             self._header.grid(in_=hframe, column=1, row=0, padx=22)
-        self._calendar_box = CalendarMonth(self)
+        self._calendar = CalendarMonth(self)
 
     def __minsize(self, evt):
-        width, height = self._calendar_box.master.geometry().split('x')
+        width, height = self._calendar.master.geometry().split('x')
         height = height[:height.index('+')]
-        self._calendar_box.master.minsize(width, height)
+        self._calendar.master.minsize(width, height)
 
     def _build_calendar(self):
         year, month = self._date.year, self._date.month
@@ -181,17 +180,12 @@ class Calendar(ttk.Frame):
 
         # update calendar shown dates
         weeks = self._cal.monthdayscalendar(year, month)
-        self._calendar_box.build(weeks)
+        self._calendar.build(weeks)
 
     # Callbacks
-
-    def _pressed(self, evt):
-        self._calendar_box.remove_selection()
-        evt.widget.on_pressed(evt, self._font)
-
     def _prev_month(self):
         """Updated calendar to show the previous month."""
-        self._calendar_box.remove_selection()
+        self._calendar.remove_selection()
         self._date = self._date - self.timedelta(days=1)
         self._date = self.datetime(self._date.year, self._date.month, 1)
         self._build_calendar() # reconstuct calendar
@@ -200,7 +194,7 @@ class Calendar(ttk.Frame):
 
     def _next_month(self):
         """Update calendar to show the next month."""
-        self._calendar_box.remove_selection()
+        self._calendar.remove_selection()
         year, month = self._date.year, self._date.month
         self._date = self._date + self.timedelta(
             days=calendar.monthrange(year, month)[1] + 1)
