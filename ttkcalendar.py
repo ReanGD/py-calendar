@@ -8,6 +8,12 @@ except ImportError: # py3k
     import tkinter.font as tkFont
 
 import ttk
+
+class CalendarConfig:
+    def __init__(self):
+        self.select_bg = '#ecffc4'
+        self.select_fg = '#05640e'
+        self.header_bg = 'grey90'
     
 class CalendarColumn(ttk.Treeview):
     items_cnt = 6
@@ -15,17 +21,19 @@ class CalendarColumn(ttk.Treeview):
         ttk.Treeview.__init__(self, master, height=7, selectmode='none', show='')
         self.pack(side=Tkinter.LEFT, fill=Tkinter.BOTH, expand=True)
 
-    def config(self, name, header_bg, width):
+    def config(self, name, config, width, btn1_press_callback):
         self['columns'] = name
-        self.tag_configure('header', background=header_bg)
+        self.tag_configure('header', background=config.header_bg)
         self.insert('', 'end', values=[name], tag='header')
         self.items = [self.insert('', 'end', values='') for _ in range(CalendarColumn.items_cnt)]
         self.column(name, minwidth=width, width=width, anchor='e')
-
-    def setup_selection(self, sel_bg, sel_fg, btn1_press_callback):
-        self.canvas = canvas = Tkinter.Canvas(self, background=sel_bg, borderwidth=0, highlightthickness=0)
-        canvas.text = canvas.create_text(0, 0, fill=sel_fg, anchor='w')
+        canvas = Tkinter.Canvas(self,
+                                background=config.select_bg,
+                                borderwidth=0,
+                                highlightthickness=0)
+        canvas.text = canvas.create_text(0, 0, fill=config.select_fg, anchor='w')
         canvas.bind('<ButtonPress-1>', lambda evt: canvas.place_forget())
+        self.canvas = canvas
         self.bind('<Configure>', lambda evt: canvas.place_forget())
         self.bind('<ButtonPress-1>', btn1_press_callback)
 
@@ -72,12 +80,11 @@ class CalendarMonth(ttk.Treeview):
         self._cols = [CalendarColumn(self) for _ in range(7)]
         self.pack(in_=master, expand=1, fill='both', side='bottom')
 
-    def config(self, cal, font, header_bg, sel_bg, sel_fg, btn1_press_callback):
+    def config(self, cal, font, config, btn1_press_callback):
         cols = cal.formatweekheader(3).split()
         maxwidth = max(font.measure(col) for col in cols)
         for i, col in enumerate(self._cols):
-            col.config(cols[i], header_bg, maxwidth)
-            col.setup_selection(sel_bg, sel_fg, btn1_press_callback)
+            col.config(cols[i], config, maxwidth, btn1_press_callback)
 
     def build(self, weeks):
         for iweek in range(CalendarColumn.items_cnt):
@@ -111,11 +118,10 @@ class Calendar(ttk.Frame):
         year = kw.pop('year', self.datetime.now().year)
         month = kw.pop('month', self.datetime.now().month)
         locale = kw.pop('locale', None)
-        sel_bg = kw.pop('selectbackground', '#ecffc4')
-        sel_fg = kw.pop('selectforeground', '#05640e')
         self._draw_button = kw.pop('draw_button', True)
         self._on_next_month = kw.pop('on_next_month', None)
         self._on_prev_month = kw.pop('on_prev_month', None)
+        self._config = CalendarConfig()
 
         self._date = self.datetime(year, month, 1)
         self._selection = None
@@ -127,7 +133,7 @@ class Calendar(ttk.Frame):
         self.__setup_styles()       # creates custom styles
         self.__place_widgets()      # pack/grid used widgets
         self._font = tkFont.Font()
-        self._calendar_box.config(self._cal, self._font, 'grey90', sel_bg, sel_fg, self._pressed)
+        self._calendar_box.config(self._cal, self._font, self._config, self._pressed)
         self._build_calendar()
 
         # set the minimal size for the widget
