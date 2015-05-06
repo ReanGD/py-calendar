@@ -16,13 +16,10 @@ class Runner(Tkinter.Tk):
         import locale
         Tkinter.Tk.__init__(self, className='PyOrgCalendar')
         self.title('Ttk Calendar')
-        today = datetime.date.today()
-        kwargs = {"firstweekday": calendar.MONDAY,
-                  "month": today.month,
-                  "year": today.year,
-                  "locale": locale.getdefaultlocale()}
+        kwargs = {
+            "locale": locale.getdefaultlocale()}
     
-        self.cal = ttkcalendar.OrgCaledar(draw_button=True, **kwargs)
+        self.cal = ttkcalendar.OrgCaledar(**kwargs)
         self.cal.grid(row=0,column=1)
 
 def main():

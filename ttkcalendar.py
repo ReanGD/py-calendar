@@ -11,6 +11,7 @@ import ttk
 
 class CalendarConfig:
     def __init__(self):
+        self.firstweekday = calendar.MONDAY
         self.select_bg = '#ecffc4'
         self.select_fg = '#05640e'
         self.header_bg = 'grey90'
@@ -82,8 +83,7 @@ class CalendarMonth(ttk.Treeview):
         self._cols = [CalendarColumn(self) for _ in range(7)]
         self.pack(in_=master, expand=1, fill='both', side='bottom')
 
-    def config(self, cal, font, config):
-        cols = cal.formatweekheader(3).split()
+    def config(self, cols, font, config):
         maxwidth = max(font.measure(col) for col in cols)
         for i, col in enumerate(self._cols):
             col.config(cols[i], config, maxwidth, font)
@@ -117,96 +117,71 @@ class CalendarHeader(ttk.Frame):
     def build(self, text):
         self._header['text'] = text
 
-
-def get_calendar(locale, fwday):
-    if locale is None:
-        return calendar.TextCalendar(fwday)
-    else:
-        return calendar.LocaleTextCalendar(fwday, locale)
-
-class OrgCaledar(ttk.Frame):
+class Calendar(ttk.Frame):
     datetime = calendar.datetime.datetime
     timedelta = calendar.datetime.timedelta
 
-    def __init__(self, master=None, **kw):
-        """
-        WIDGET-SPECIFIC OPTIONS
-
-            locale, firstweekday, year, month, selectbackground,
-            selectforeground
-        """
-        fwday = kw.pop('firstweekday', calendar.MONDAY)
-        year = kw.pop('year', self.datetime.now().year)
-        month = kw.pop('month', self.datetime.now().month)
-        locale = kw.pop('locale', None)
-        self._draw_button = kw.pop('draw_button', True)
-        self._on_next_month = kw.pop('on_next_month', None)
-        self._on_prev_month = kw.pop('on_prev_month', None)
-        self._config = CalendarConfig()
-
-        self._date = self.datetime(year, month, 1)
-        self._selection = None
-
-        ttk.Frame.__init__(self, master, **kw)
-
-        self._cal = get_calendar(locale, fwday)
-
-        self.__setup_styles()       # creates custom styles
-        self.__place_widgets()      # pack/grid used widgets
-        self._font = tkFont.Font()
-        self._calendar.config(self._cal, self._font, self._config)
-        self._build_calendar()
-
-    def __setup_styles(self):
-        # custom ttk styles
-        style = ttk.Style(self.master)
-        style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
-        arrow_layout = lambda dir: (
-            [('Button.focus', {'children': [('Button.%sarrow' % dir, None)]})]
-        )
-        if self._draw_button:
-            style.layout('L.TButton', arrow_layout('left'))
-            style.layout('R.TButton', arrow_layout('right'))
-
-    def __place_widgets(self):
-        self._header = CalendarHeader(self, self._draw_button, self._prev_month, self._next_month)
+    def __init__(self, master, draw_button, func_prev_month, func_next_month):
+        ttk.Frame.__init__(self, master)
+        self._header = CalendarHeader(self, draw_button, func_prev_month, func_next_month)
         self._calendar = CalendarMonth(self)
+        self.pack()
+        self._date = self.datetime(self.datetime.now().year, self.datetime.now().month, 1)
 
-    def _build_calendar(self):
+    def config(self, locale, font, config):
+        if locale is None:
+            self._cal = calendar.TextCalendar(config.firstweekday)
+        else:
+            self._cal = calendar.LocaleTextCalendar(config.firstweekday, locale)
+        cols = self._cal.formatweekheader(3).split()
+        self._calendar.config(cols, font, config)
+
+    def build(self):
         year, month = self._date.year, self._date.month
         header = self._cal.formatmonthname(year, month, 0)
         self._header.build(header.title())
         weeks = self._cal.monthdayscalendar(year, month)
         self._calendar.build(weeks)
 
-    # Callbacks
-    def _prev_month(self):
-        """Updated calendar to show the previous month."""
+    def prev_month(self):
         self._calendar.remove_selection()
         self._date = self._date - self.timedelta(days=1)
         self._date = self.datetime(self._date.year, self._date.month, 1)
-        self._build_calendar() # reconstuct calendar
-        if self._on_prev_month:
-            self._on_prev_month()
+        self.build()
 
-    def _next_month(self):
-        """Update calendar to show the next month."""
+    def next_month(self):
         self._calendar.remove_selection()
         year, month = self._date.year, self._date.month
         self._date = self._date + self.timedelta(
             days=calendar.monthrange(year, month)[1] + 1)
         self._date = self.datetime(self._date.year, self._date.month, 1)
-        self._build_calendar() # reconstruct calendar
-        if self._on_next_month:
-            self._on_next_month()
+        self.build()
 
-    # Properties
+class OrgCaledar(ttk.Frame):
+    def __init__(self, master=None, **kw):
+        locale = kw.pop('locale', None)
+        self._config = CalendarConfig()
+        self._selection = None
 
-    @property
-    def selection(self):
-        """Return a datetime representing the current selected date."""
-        if not self._selection:
-            return None
+        ttk.Frame.__init__(self, master, **kw)
 
-        year, month = self._date.year, self._date.month
-        return self.datetime(year, month, int(self._selection[0]))
+        self.__setup_styles()
+        self._clndr = Calendar(self, True, self._prev_month, self._next_month)
+        self._clndr.config(locale, self._font, self._config)
+        self._clndr.build()
+
+    def __setup_styles(self):
+        self._font = tkFont.Font()
+        style = ttk.Style(self.master)
+        style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
+        arrow_layout = lambda dir: (
+            [('Button.focus', {'children': [('Button.%sarrow' % dir, None)]})]
+        )
+        style.layout('L.TButton', arrow_layout('left'))
+        style.layout('R.TButton', arrow_layout('right'))
+
+    def _prev_month(self):
+        self._clndr.prev_month()
+
+    def _next_month(self):
+        self._clndr.next_month()
