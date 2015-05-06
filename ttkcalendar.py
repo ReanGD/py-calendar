@@ -157,9 +157,6 @@ class OrgCaledar(ttk.Frame):
         self._calendar.config(self._cal, self._font, self._config)
         self._build_calendar()
 
-        # set the minimal size for the widget
-        self._calendar.bind('<Map>', self.__minsize)
-
     def __setup_styles(self):
         # custom ttk styles
         style = ttk.Style(self.master)
@@ -174,11 +171,6 @@ class OrgCaledar(ttk.Frame):
     def __place_widgets(self):
         self._header = CalendarHeader(self, self._draw_button, self._prev_month, self._next_month)
         self._calendar = CalendarMonth(self)
-
-    def __minsize(self, evt):
-        width, height = self._calendar.master.geometry().split('x')
-        height = height[:height.index('+')]
-        self._calendar.master.minsize(width, height)
 
     def _build_calendar(self):
         year, month = self._date.year, self._date.month
