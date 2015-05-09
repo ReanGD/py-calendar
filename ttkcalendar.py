@@ -125,7 +125,6 @@ class Calendar(ttk.Frame):
         ttk.Frame.__init__(self, master)
         self._header = CalendarHeader(self, draw_button, func_prev_month, func_next_month)
         self._calendar = CalendarMonth(self)
-        self.pack()
         self._date = self.datetime(self.datetime.now().year, self.datetime.now().month, 1)
 
     def config(self, locale, font, config):
@@ -166,9 +165,16 @@ class OrgCaledar(ttk.Frame):
         ttk.Frame.__init__(self, master, **kw)
 
         self.__setup_styles()
-        self._clndr = Calendar(self, True, self._prev_month, self._next_month)
-        self._clndr.config(locale, self._font, self._config)
-        self._clndr.build()
+        self._calendars = []
+        for it in range(3):
+            draw_buttons = (it == 1)
+            cal = Calendar(self, draw_buttons, self._prev_month, self._next_month)
+            cal.grid(row=0, column=it)
+            cal.config(locale, self._font, self._config)
+            cal.build()
+            self._calendars.append(cal)
+        self._calendars[0].prev_month()
+        self._calendars[2].next_month()
 
     def __setup_styles(self):
         self._font = tkFont.Font()
@@ -181,7 +187,7 @@ class OrgCaledar(ttk.Frame):
         style.layout('R.TButton', arrow_layout('right'))
 
     def _prev_month(self):
-        self._clndr.prev_month()
+        [it.prev_month() for it in self._calendars]
 
     def _next_month(self):
-        self._clndr.next_month()
+        [it.next_month() for it in self._calendars]
