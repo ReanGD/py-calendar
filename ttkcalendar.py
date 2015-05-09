@@ -156,20 +156,19 @@ class Calendar(ttk.Frame):
         self.build()
 
 class OrgCaledar(ttk.Frame):
-    def __init__(self, master=None, **kw):
-        locale = kw.pop('locale', None)
-        self._config = CalendarConfig()
-        self._selection = None
+    def __init__(self, master=None):
+        ttk.Frame.__init__(self, master)
 
-        ttk.Frame.__init__(self, master, **kw)
-
+        import locale
+        locale = locale.getdefaultlocale()
+        config = CalendarConfig()
         self.__setup_styles()
         self._calendars = []
         for it in range(3):
             draw_buttons = (it == 1)
             cal = Calendar(self, draw_buttons, self._prev_month, self._next_month)
             cal.grid(row=0, column=it, padx=1, pady=0)
-            cal.config(locale, self._font, self._config)
+            cal.config(locale, self._font, config)
             cal.build()
             self._calendars.append(cal)
         self._calendars[0].prev_month()
@@ -190,3 +189,18 @@ class OrgCaledar(ttk.Frame):
 
     def _next_month(self):
         [it.next_month() for it in self._calendars]
+
+def main():
+    import sys
+    root = Tkinter.Tk(className='PyOrgCalendar')
+    root.title('Ttk Calendar')
+    OrgCaledar().pack()
+
+    if 'win' not in sys.platform:
+        style = ttk.Style()
+        style.theme_use('clam')
+
+    root.mainloop()
+
+if __name__ == '__main__':
+    main()
