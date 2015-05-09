@@ -20,7 +20,7 @@ class CalendarColumn(ttk.Treeview):
     items_cnt = 6
     def __init__(self, master):
         ttk.Treeview.__init__(self, master, height=7, selectmode='none', show='')
-        self.pack(side=Tkinter.LEFT, fill=Tkinter.BOTH, expand=True)
+        self.pack(side="left")
 
     def config(self, name, config, width, font):
         self['columns'] = name
@@ -59,7 +59,6 @@ class CalendarColumn(ttk.Treeview):
         column = self.identify_column(x)
 
         if not column or not item in self.items:
-            # clicked in the weekdays row or just outside the columns
             return
 
         item_values = self.item(item)['values']
@@ -79,12 +78,11 @@ class CalendarColumn(ttk.Treeview):
 
 class CalendarMonth(ttk.Treeview):
     def __init__(self, master):
-        ttk.Treeview.__init__(self, show='', selectmode='none', height=7)
+        ttk.Treeview.__init__(self, master, show='', selectmode='none', height=7)
         self._cols = [CalendarColumn(self) for _ in range(7)]
-        self.pack(in_=master, expand=1, fill='both', side='bottom')
 
     def config(self, cols, font, config):
-        maxwidth = max(font.measure(col) for col in cols)
+        maxwidth = max(font.measure(col) for col in cols) + 2
         for i, col in enumerate(self._cols):
             col.config(cols[i], config, maxwidth, font)
 
@@ -106,13 +104,12 @@ class CalendarHeader(ttk.Frame):
             lbtn = ttk.Button(self, style='L.TButton', command=func_prev_month)
             rbtn = ttk.Button(self, style='R.TButton', command=func_next_month)
         self._header = ttk.Label(self, width=15, anchor='center')
-        self.pack(in_=master, side='top', pady=4, anchor='center')
         if draw_button:
-            lbtn.grid(in_=self)
-            self._header.grid(in_=self, column=1, row=0, padx=12)
-            rbtn.grid(in_=self, column=2, row=0)
+            lbtn.grid(sticky="w")
+            self._header.grid(sticky="we", column=1, row=0)
+            rbtn.grid(sticky="e",column=2, row=0)
         else:
-            self._header.grid(in_=self, column=1, row=0, padx=22)
+            self._header.grid(sticky="we")
 
     def build(self, text):
         self._header['text'] = text
@@ -124,7 +121,9 @@ class Calendar(ttk.Frame):
     def __init__(self, master, draw_button, func_prev_month, func_next_month):
         ttk.Frame.__init__(self, master)
         self._header = CalendarHeader(self, draw_button, func_prev_month, func_next_month)
+        self._header.pack(side='top', pady=4, anchor='center')
         self._calendar = CalendarMonth(self)
+        self._calendar.pack(side='bottom', anchor='center')
         self._date = self.datetime(self.datetime.now().year, self.datetime.now().month, 1)
 
     def config(self, locale, font, config):
@@ -169,7 +168,7 @@ class OrgCaledar(ttk.Frame):
         for it in range(3):
             draw_buttons = (it == 1)
             cal = Calendar(self, draw_buttons, self._prev_month, self._next_month)
-            cal.grid(row=0, column=it)
+            cal.grid(row=0, column=it, padx=1, pady=0)
             cal.config(locale, self._font, self._config)
             cal.build()
             self._calendars.append(cal)
