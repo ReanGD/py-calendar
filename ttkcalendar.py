@@ -1,4 +1,6 @@
 import calendar
+import os.path
+import orgnode.Orgnode as orgnode
 
 try:
     import Tkinter
@@ -12,9 +14,13 @@ import ttk
 class CalendarConfig:
     def __init__(self):
         self.firstweekday = calendar.MONDAY
-        self.select_bg = '#ecffc4'
-        self.select_fg = '#05640e'
-        self.header_bg = 'grey90'
+        self.calendar_bg = 'white'
+        self.calendar_fg = 'black'
+        self.calendar_header_bg = 'grey90'
+        self.calendar_header_fg = 'black'
+        self.calendar_select_bg = '#ecffc4'
+        self.calendar_select_fg = '#05640e'
+        self.org_files = ["~/doc/task/cal.org"]
     
 class CalendarColumn(ttk.Treeview):
     items_cnt = 6
@@ -24,15 +30,16 @@ class CalendarColumn(ttk.Treeview):
 
     def config(self, name, config, width, font):
         self['columns'] = name
-        self.tag_configure('header', background=config.header_bg)
+        self.tag_configure('header', background=config.calendar_header_bg, foreground=config.calendar_header_fg)
+        self.tag_configure('normal', background=config.calendar_bg, foreground=config.calendar_fg)
         self.insert('', 'end', values=[name], tag='header')
-        self.items = [self.insert('', 'end', values='') for _ in range(CalendarColumn.items_cnt)]
+        self.items = [self.insert('', 'end', values='', tag='normal') for _ in range(CalendarColumn.items_cnt)]
         self.column(name, minwidth=width, width=width, anchor='e')
         canvas = Tkinter.Canvas(self,
-                                background=config.select_bg,
+                                background=config.calendar_select_bg,
                                 borderwidth=0,
                                 highlightthickness=0)
-        canvas.text = canvas.create_text(0, 0, fill=config.select_fg, anchor='w')
+        canvas.text = canvas.create_text(0, 0, fill=config.calendar_select_fg, anchor='w')
         self._font = font
         self._canvas = canvas
         canvas.bind('<ButtonPress-1>', lambda evt: self.remove_selection())
@@ -155,6 +162,20 @@ class Calendar(ttk.Frame):
         self._date = self.datetime(self._date.year, self._date.month, 1)
         self.build()
 
+class TaskList(ttk.Frame):
+    def __init__(self, master, config):
+        ttk.Frame.__init__(self, master)
+        self._db = self._load(config.org_files)
+        for idx, it in enumerate(self._db):
+            ttk.Checkbutton(self, text=it.Heading()).grid(row=idx, sticky="w")
+
+    def _load(self, path_list):
+        db = []
+        for filename in path_list:
+            db += orgnode.makelist(os.path.expanduser(filename))
+        return db
+        
+
 class OrgCaledar(ttk.Frame):
     def __init__(self, master=None):
         ttk.Frame.__init__(self, master)
@@ -173,6 +194,8 @@ class OrgCaledar(ttk.Frame):
             self._calendars.append(cal)
         self._calendars[0].prev_month()
         self._calendars[2].next_month()
+        self._tasks = TaskList(self, config)
+        self._tasks.grid(row=1, columnspan=3, sticky="w")
 
     def __setup_styles(self):
         self._font = tkFont.Font()
