@@ -28,7 +28,7 @@ class CalendarColumn(ttk.Treeview):
         ttk.Treeview.__init__(self, master, height=7, selectmode='none', show='')
         self.pack(side="left")
 
-    def config(self, name, config, width, font):
+    def config(self, name, config, width, font, func_remove_selection):
         self['columns'] = name
         self.tag_configure('header', background=config.calendar_header_bg, foreground=config.calendar_header_fg)
         self.tag_configure('normal', background=config.calendar_bg, foreground=config.calendar_fg)
@@ -42,6 +42,7 @@ class CalendarColumn(ttk.Treeview):
         canvas.text = canvas.create_text(0, 0, fill=config.calendar_select_fg, anchor='w')
         self._font = font
         self._canvas = canvas
+        self._func_remove_selection = func_remove_selection
         canvas.bind('<ButtonPress-1>', lambda evt: self.remove_selection())
         self.bind('<Configure>', lambda evt: self.remove_selection())
         self.bind('<ButtonPress-1>', self._on_click)
@@ -80,7 +81,7 @@ class CalendarColumn(ttk.Treeview):
         if not bbox: # calendar not visible yet
             return
 
-        self.master.remove_selection()
+        self._func_remove_selection()
         self._show_selection('%02d' % text, bbox)
 
 class CalendarMonth(ttk.Treeview):
@@ -88,10 +89,10 @@ class CalendarMonth(ttk.Treeview):
         ttk.Treeview.__init__(self, master, show='', selectmode='none', height=7)
         self._cols = [CalendarColumn(self) for _ in range(7)]
 
-    def config(self, cols, font, config):
+    def config(self, cols, font, config, func_remove_selection):
         maxwidth = max(font.measure(col) for col in cols) + 2
         for i, col in enumerate(self._cols):
-            col.config(cols[i], config, maxwidth, font)
+            col.config(cols[i], config, maxwidth, font, func_remove_selection)
 
     def build(self, weeks):
         for iweek in range(CalendarColumn.items_cnt):
@@ -133,13 +134,16 @@ class Calendar(ttk.Frame):
         self._calendar.pack(side='bottom', anchor='center')
         self._date = self.datetime(self.datetime.now().year, self.datetime.now().month, 1)
 
-    def config(self, locale, font, config):
+    def config(self, locale, font, config, func_remove_selection):
         if locale is None:
             self._cal = calendar.TextCalendar(config.firstweekday)
         else:
             self._cal = calendar.LocaleTextCalendar(config.firstweekday, locale)
         cols = self._cal.formatweekheader(3).split()
-        self._calendar.config(cols, font, config)
+        self._calendar.config(cols, font, config, func_remove_selection)
+
+    def remove_selection(self):
+        self._calendar.remove_selection()
 
     def build(self):
         year, month = self._date.year, self._date.month
@@ -189,7 +193,7 @@ class OrgCaledar(ttk.Frame):
             draw_buttons = (it == 1)
             cal = Calendar(self, draw_buttons, self._prev_month, self._next_month)
             cal.grid(row=0, column=it, padx=1, pady=0)
-            cal.config(locale, self._font, config)
+            cal.config(locale, self._font, config, self._remove_selection)
             cal.build()
             self._calendars.append(cal)
         self._calendars[0].prev_month()
@@ -206,6 +210,9 @@ class OrgCaledar(ttk.Frame):
         )
         style.layout('L.TButton', arrow_layout('left'))
         style.layout('R.TButton', arrow_layout('right'))
+
+    def _remove_selection(self):
+        [it.remove_selection() for it in self._calendars]
 
     def _prev_month(self):
         [it.prev_month() for it in self._calendars]
