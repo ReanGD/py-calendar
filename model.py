@@ -29,12 +29,12 @@ class TaskModel(QAbstractTableModel):
         if not index.isValid():
             return QVariant()
 
-        if role == Qt.BackgroundRole:
+        # if role == Qt.BackgroundRole:
             # print(self._selected_row, ':', index.row())
-            if self._selected_row == index.row():
-                return self._brush_row_selected
-            else:
-                return self._brush_row
+            # if self._selected_row == index.row():
+            #     return self._brush_row_selected
+            # else:
+            #     return self._brush_row
         # else:
         #     print(self._selected_row, ':', index.row(), '!')
 
@@ -60,11 +60,11 @@ class TaskModel(QAbstractTableModel):
 
         return False
 
-    def select(self, row):
-        self._selected_row = row
-        self.dataChanged.emit(self.createIndex(row, 0),
-                              self.createIndex(row, 1),
-                              [Qt.BackgroundRole])
+    # def select(self, row):
+    #     self._selected_row = row
+    #     self.dataChanged.emit(self.createIndex(row, 0),
+    #                           self.createIndex(row, 1),
+    #                           [Qt.BackgroundRole])
 
     def flags(self, index):
         if index.isValid():

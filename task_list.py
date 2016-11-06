@@ -50,16 +50,21 @@ class TaskTableWidget(QTableView):
         # self.delegate = Delegate(self)
         # self.setItemDelegate(self.delegate)
         self.sel_row = None
+        # self.setStyleSheet("""
+        # QTableView::indicator:hover {
+        #     background: #FFEBA0;
+        # }
+        # """)
 
     def mouseMoveEvent(self, event):
         #     QMouseEvent
         index = self.indexAt(event.pos())
         if index.isValid() and self.sel_row != index.row():
             self.sel_row = index.row()
-            self.model().select(self.sel_row)
+            # self.model().select(self.sel_row)
 
-    def select(self, row):
-        self.model().select(row)
+    # def select(self, row):
+    #     self.model().select(row)
 
     def cell_hover(self, row, column):
         if self.current_row != row:
