@@ -19,6 +19,7 @@ class TaskView(QWidget):
 
         self.mapper = QDataWidgetMapper()
         self.mapper.setModel(model)
+        self.mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
         self.mapper.addMapping(self.desc, TaskModel.col_desc)
         self.mapper.addMapping(self.date, TaskModel.col_date)
 
@@ -65,6 +66,13 @@ class TaskView(QWidget):
         print('save', self.mapper.submit())
         self.close.emit()
 
+    def cancel(self):
+        self.close.emit()
+
+    def remove(self):
+        self.mapper.model().removeRow(self.mapper.currentIndex())
+        self.close.emit()
+
     def create_control_buttons(self):
         control_lt = QHBoxLayout()
 
@@ -73,9 +81,11 @@ class TaskView(QWidget):
         control_lt.addWidget(btn_save, 0, Qt.AlignCenter)
 
         btn_cancel = QPushButton('Отменить')
+        btn_cancel.clicked.connect(self.cancel)
         control_lt.addWidget(btn_cancel, 0, Qt.AlignCenter)
 
         btn_remove = QPushButton('Удалить')
+        btn_remove.clicked.connect(self.remove)
         control_lt.addWidget(btn_remove, 1, Qt.AlignRight)
 
         return control_lt

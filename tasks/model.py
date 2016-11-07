@@ -78,6 +78,13 @@ class TaskModel(QAbstractTableModel):
 
         return False
 
+    def removeRow(self, row, parent=None, *args, **kwargs):
+        if row >= 0 and row < self.rowCount():
+            del self.tasks[row]
+            return True
+
+        return False
+
     # def select(self, row):
     #     self._selected_row = row
     #     self.dataChanged.emit(self.createIndex(row, 0),

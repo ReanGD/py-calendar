@@ -29,6 +29,9 @@ class TaskTableWidget(QTableView):
         self.setColumnWidth(0, 40)
         self.horizontalHeader().setStretchLastSection(True)
 
+        # ui->deviceTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+        # ui->deviceTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+
         # Columns
         self.setColumnHidden(2, True)
 
