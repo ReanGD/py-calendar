@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QDataWidgetMapper
 from PyQt5.QtWidgets import QFormLayout, QVBoxLayout, QHBoxLayout
 from PyQt5.QtWidgets import QWidget, QLineEdit, QDateEdit, QComboBox, QPushButton, QLabel
 
+from tasks.model import TaskModel
+
 
 class TaskView(QWidget):
     close = pyqtSignal()
@@ -10,23 +12,23 @@ class TaskView(QWidget):
     def __init__(self, model):
         super().__init__()
         self.header = QLabel('')
-        self.desk = QLineEdit()
+        self.desc = QLineEdit()
         self.date = QDateEdit()
         self.time = QComboBox()
         self.init_ui()
 
         self.mapper = QDataWidgetMapper()
         self.mapper.setModel(model)
-        self.mapper.addMapping(self.desk, 1)
-        self.mapper.toFirst()
+        self.mapper.addMapping(self.desc, TaskModel.col_desc)
+        self.mapper.addMapping(self.date, TaskModel.col_date)
 
     def set_task(self, index):
         self.mapper.setCurrentIndex(index)
         self.header.setText('РЕДАКТИРОВАНИЕ ЗАДАЧИ')
         # text = 'НОВАЯ ЗАДАЧА'
+        # self.date.setDate(QDate().currentDate())
 
     def create_date(self):
-        self.date.setDate(QDate().currentDate())
         self.date.setDisplayFormat('dd.MM.yyyy')
         self.date.setCalendarPopup(True)
         self.date.setFixedWidth(120)
@@ -84,7 +86,7 @@ class TaskView(QWidget):
         fm.addRow(self.header)
         fm.addRow(QLabel(''))
 
-        fm.addRow(self.desk)
+        fm.addRow(self.desc)
         fm.addRow(QLabel(''))
 
         fm.addRow(QLabel('Когда это нужно сделать?'))

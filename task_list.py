@@ -29,6 +29,9 @@ class TaskTableWidget(QTableView):
         self.setColumnWidth(0, 40)
         self.horizontalHeader().setStretchLastSection(True)
 
+        # Columns
+        self.setColumnHidden(2, True)
+
         # headers
         self.horizontalHeader().hide()
         self.verticalHeader().hide()

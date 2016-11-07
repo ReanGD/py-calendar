@@ -14,9 +14,8 @@ class Root(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.task_view = None
-        self.task_list = None
         self.model = None
+        self.task_view = None
         self.initUI()
 
     def initUI(self):
@@ -27,9 +26,9 @@ class Root(QMainWindow):
         self.model = TaskModel()
         self.central = QStackedWidget()
 
-        self.task_list = TaskList(self.model)
-        self.task_list.open.connect(self.task_open)
-        self.central.insertWidget(Root.task_list_index, self.task_list)
+        task_list = TaskList(self.model)
+        task_list.open.connect(self.task_open)
+        self.central.insertWidget(Root.task_list_index, task_list)
 
         self.task_view = TaskView(self.model)
         self.task_view.close.connect(self.task_view_close)
@@ -71,4 +70,4 @@ if __name__ == '__main__':
         ex.show()
         sys.exit(app.exec_())
     except Exception as e:
-        print('Error exit' + str(e))
+        print('Error exit: ' + str(e))

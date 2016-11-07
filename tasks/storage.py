@@ -1,7 +1,11 @@
+from PyQt5.QtCore import QDate, QTime, QDateTime
+
+
 class Task(object):
-    def __init__(self, desk, completed):
+    def __init__(self, desc, datetime, completed):
         super().__init__()
-        self.desk = desk
+        self.desc = desc
+        self.datetime = datetime
         self.completed = completed
 
 
@@ -12,6 +16,11 @@ class TaskStorage(object):
     def load(self):
         data = []
         for row in range(10):
-            data.append(Task('Text%d' % row, False))
+            date = QDate().currentDate().addDays(row)
+            h = row
+            m = 0
+            time = QTime(h, m)
+            datetime = QDateTime(date, time)
+            data.append(Task('Text%d' % row, datetime, False))
 
         return data

@@ -6,6 +6,10 @@ from tasks.storage import TaskStorage
 
 
 class TaskModel(QAbstractTableModel):
+    col_completed = 0
+    col_desc = 1
+    col_date = 2
+
     def __init__(self):
         super().__init__()
         storage = TaskStorage()
@@ -18,10 +22,13 @@ class TaskModel(QAbstractTableModel):
         return len(self.tasks)
 
     def columnCount(self, parent=None, *args, **kwargs):
-        return 2
+        return 3
 
     def data(self, index, role=None):
-        if not index.isValid():
+        skip_role = [Qt.DecorationRole, Qt.FontRole,
+                     Qt.TextAlignmentRole, Qt.BackgroundRole,
+                     Qt.ForegroundRole]
+        if not index.isValid() or role in skip_role:
             return QVariant()
 
         # if role == Qt.BackgroundRole:
@@ -37,14 +44,17 @@ class TaskModel(QAbstractTableModel):
         col = index.column()
 
         if role == Qt.CheckStateRole:
-            if col == 0:
+            if col == TaskModel.col_completed:
                 return Qt.Checked if task.completed else Qt.Unchecked
         elif role == Qt.DisplayRole:
-            if col == 1:
-                return task.desk
-        if role == Qt.EditRole:
-            if col == 1:
-                return task.desk
+            if col == TaskModel.col_desc:
+                return task.desc
+        elif role == Qt.EditRole:
+            if col == TaskModel.col_desc:
+                return task.desc
+            elif col == TaskModel.col_date:
+                return task.datetime.date()
+
         else:
             return QVariant()
 
@@ -54,13 +64,16 @@ class TaskModel(QAbstractTableModel):
 
         col = index.column()
         if role == Qt.CheckStateRole:
-            if col == 0:
+            if col == TaskModel.col_completed:
                 self.tasks[index.row()].completed = (value == Qt.Checked)
                 return True
 
         if role == Qt.EditRole:
-            if col == 1:
-                self.tasks[index.row()].desk = value
+            if col == TaskModel.col_desc:
+                self.tasks[index.row()].desc = value
+                return True
+            elif col == TaskModel.col_date:
+                self.tasks[index.row()].datetime.setDate(value)
                 return True
 
         return False
@@ -73,9 +86,9 @@ class TaskModel(QAbstractTableModel):
 
     def flags(self, index):
         if index.isValid():
-            if index.column() == 0:
+            if index.column() == TaskModel.col_completed:
                 return Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
-            elif index.column() == 1:
+            elif index.column() == TaskModel.col_desc:
                 return Qt.ItemIsEnabled
 
         return super().flags(index)
