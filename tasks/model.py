@@ -1,20 +1,15 @@
 from PyQt5.QtCore import QAbstractTableModel, QVariant, Qt
-from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QBrush
 from PyQt5.QtGui import QColor
 
-
-class Task(object):
-    def __init__(self, desk, completed):
-        super().__init__()
-        self.desk = desk
-        self.completed = completed
+from tasks.storage import TaskStorage
 
 
 class TaskModel(QAbstractTableModel):
-    def __init__(self, tasks):
+    def __init__(self):
         super().__init__()
-        self.tasks = tasks
+        storage = TaskStorage()
+        self.tasks = storage.load()
         self._selected_row = None
         self._brush_row = QBrush(QColor('white'))
         self._brush_row_selected = QBrush(QColor(255, 235, 160))
@@ -47,6 +42,9 @@ class TaskModel(QAbstractTableModel):
         elif role == Qt.DisplayRole:
             if col == 1:
                 return task.desk
+        if role == Qt.EditRole:
+            if col == 1:
+                return task.desk
         else:
             return QVariant()
 
@@ -54,9 +52,16 @@ class TaskModel(QAbstractTableModel):
         if not index.isValid():
             return False
 
-        if role == Qt.CheckStateRole and index.column() == 0:
-            self.tasks[index.row()].completed = (value == Qt.Checked)
-            return True
+        col = index.column()
+        if role == Qt.CheckStateRole:
+            if col == 0:
+                self.tasks[index.row()].completed = (value == Qt.Checked)
+                return True
+
+        if role == Qt.EditRole:
+            if col == 1:
+                self.tasks[index.row()].desk = value
+                return True
 
         return False
 

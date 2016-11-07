@@ -1,22 +1,28 @@
-from PyQt5.QtCore import QDate, Qt
-from PyQt5.QtWidgets import QFormLayout, QHBoxLayout
-from PyQt5.QtWidgets import QVBoxLayout, QLineEdit, QDateEdit, QComboBox, QPushButton, QLabel
+from PyQt5.QtCore import QDate, Qt, pyqtSignal
+from PyQt5.QtWidgets import QDataWidgetMapper
+from PyQt5.QtWidgets import QFormLayout, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QLineEdit, QDateEdit, QComboBox, QPushButton, QLabel
 
 
-class TaskView(QVBoxLayout):
-    def __init__(self):
+class TaskView(QWidget):
+    close = pyqtSignal()
+
+    def __init__(self, model):
         super().__init__()
-        self.task = None
         self.header = QLabel('')
         self.desk = QLineEdit()
         self.date = QDateEdit()
         self.time = QComboBox()
         self.init_ui()
 
-    def set_task(self, task):
-        self.task = task
+        self.mapper = QDataWidgetMapper()
+        self.mapper.setModel(model)
+        self.mapper.addMapping(self.desk, 1)
+        self.mapper.toFirst()
+
+    def set_task(self, index):
+        self.mapper.setCurrentIndex(index)
         self.header.setText('РЕДАКТИРОВАНИЕ ЗАДАЧИ')
-        self.desk.setText(task.desk)
         # text = 'НОВАЯ ЗАДАЧА'
 
     def create_date(self):
@@ -53,10 +59,15 @@ class TaskView(QVBoxLayout):
 
         return self.time
 
+    def save(self):
+        print('save', self.mapper.submit())
+        self.close.emit()
+
     def create_control_buttons(self):
         control_lt = QHBoxLayout()
 
         btn_save = QPushButton('Сохранить')
+        btn_save.clicked.connect(self.save)
         control_lt.addWidget(btn_save, 0, Qt.AlignCenter)
 
         btn_cancel = QPushButton('Отменить')
@@ -87,6 +98,8 @@ class TaskView(QVBoxLayout):
         return fm
 
     def init_ui(self):
-        self.addLayout(self.create_main_form())
-        self.addStretch()
-        self.addLayout(self.create_control_buttons())
+        layout = QVBoxLayout()
+        layout.addLayout(self.create_main_form())
+        layout.addStretch()
+        layout.addLayout(self.create_control_buttons())
+        self.setLayout(layout)

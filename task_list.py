@@ -1,15 +1,8 @@
-from PyQt5.QtCore import QEvent
-from PyQt5.QtCore import QModelIndex
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtGui import QMouseEvent
-from PyQt5.QtWidgets import QStyle
-from PyQt5.QtWidgets import QStyleOptionViewItem
 from PyQt5.QtWidgets import QStyledItemDelegate
 from PyQt5.QtWidgets import QTableView, QWidget, QPushButton
 from PyQt5.QtWidgets import QVBoxLayout, QFormLayout, QHBoxLayout
-
-from model import Task, TaskModel
 
 
 class Delegate(QStyledItemDelegate):
@@ -30,8 +23,9 @@ class Delegate(QStyledItemDelegate):
     #     super().paint(painter, option, index)
 
 class TaskTableWidget(QTableView):
-    def __init__(self):
+    def __init__(self, model):
         super().__init__()
+        self.setModel(model)
         self.setColumnWidth(0, 40)
         self.horizontalHeader().setStretchLastSection(True)
 
@@ -43,8 +37,6 @@ class TaskTableWidget(QTableView):
         self.setFocusPolicy(Qt.NoFocus)
         self.setMouseTracking(True)
         self.current_row = 0
-        # self.viewport()
-        # self.cellEntered.connect(self.cell_hover)
         self._row_unselect_brush = QBrush(QColor('white'))
         self._row_select_brush = QBrush(QColor(255, 235, 160))
         # self.delegate = Delegate(self)
@@ -57,55 +49,26 @@ class TaskTableWidget(QTableView):
         # """)
 
     def mouseMoveEvent(self, event):
-        #     QMouseEvent
         index = self.indexAt(event.pos())
         if index.isValid() and self.sel_row != index.row():
             self.sel_row = index.row()
-            # self.model().select(self.sel_row)
 
-    # def select(self, row):
-    #     self.model().select(row)
-
-    def cell_hover(self, row, column):
-        if self.current_row != row:
-            old = self.current_row
-            self.item(row, 0).setBackground(self._row_select_brush)
-            self.item(row, 1).setBackground(self._row_select_brush)
-            self.item(old, 0).setBackground(self._row_unselect_brush)
-            self.item(old, 1).setBackground(self._row_unselect_brush)
-            self.current_row = row
-
-    def setTasks(self, tasks):
-        self.setModel(TaskModel(tasks))
+    def mouseReleaseEvent(self, event):
+        index = self.indexAt(event.pos())
+        self.parentWidget().open.emit(index.row())
 
 
 class TaskList(QWidget):
-    open = pyqtSignal(Task)
+    open = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, model):
         super().__init__()
-        self.table = TaskTableWidget()
+        self.table = TaskTableWidget(model)
         self.init_ui()
-
-    def create_task_table(self, rows):
-        tasks = []
-        for row in range(rows):
-            tasks.append(Task('Text%d' % row, False))
-
-        self.table.setTasks(tasks)
-
-        # self.table.itemClicked.connect(self.handle_item_clicked)
-        return self.table
-
-    def handle_item_clicked(self, item):
-        if item.checkState() == Qt.Checked:
-            print('"%s" Checked' % item.text())
-        else:
-            self.open.emit(item.task)
 
     def create_main_form(self):
         fm = QFormLayout()
-        fm.addRow(self.create_task_table(5))
+        fm.addRow(self.table)
 
         return fm
 
