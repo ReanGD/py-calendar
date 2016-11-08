@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QDate, Qt, pyqtSignal
 from PyQt5.QtWidgets import QDataWidgetMapper
 from PyQt5.QtWidgets import QFormLayout, QVBoxLayout, QHBoxLayout
-from PyQt5.QtWidgets import QWidget, QLineEdit, QDateEdit, QComboBox, QPushButton, QLabel
+from PyQt5.QtWidgets import QWidget, QLineEdit, QDateEdit, QTimeEdit, QPushButton, QLabel
 
 from tasks.model import TaskModel
 
@@ -14,7 +14,7 @@ class TaskView(QWidget):
         self.header = QLabel('')
         self.desc = QLineEdit()
         self.date = QDateEdit()
-        self.time = QComboBox()
+        self.time = QTimeEdit()
         self.init_ui()
 
         self.mapper = QDataWidgetMapper()
@@ -22,6 +22,7 @@ class TaskView(QWidget):
         self.mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
         self.mapper.addMapping(self.desc, TaskModel.col_desc)
         self.mapper.addMapping(self.date, TaskModel.col_date)
+        self.mapper.addMapping(self.time, TaskModel.col_time)
 
     def set_task(self, index):
         self.mapper.setCurrentIndex(index)
@@ -35,6 +36,12 @@ class TaskView(QWidget):
         self.date.setFixedWidth(120)
 
         return self.date
+
+    def create_time(self):
+        self.time.setDisplayFormat('hh.mm')
+        self.time.setFixedWidth(120)
+
+        return self.time
 
     def create_date_buttons(self):
         date_lt = QHBoxLayout()
@@ -53,14 +60,14 @@ class TaskView(QWidget):
 
         return date_lt
 
-    def create_time_choice(self):
-        self.time.setMaxVisibleItems(15)
-        self.time.setStyleSheet('QComboBox { combobox-popup: 0; }')
-        for it in range(24):
-            self.time.insertItem(it * 2 + 0, '%.2d:00' % it)
-            self.time.insertItem(it * 2 + 1, '%.2d:30' % it)
-
-        return self.time
+    # def create_time_choice(self):
+    #     self.time.setMaxVisibleItems(15)
+    #     self.time.setStyleSheet('QComboBox { combobox-popup: 0; }')
+    #     for it in range(24):
+    #         self.time.insertItem(it * 2 + 0, '%.2d:00' % it)
+    #         self.time.insertItem(it * 2 + 1, '%.2d:30' % it)
+    #
+    #     return self.time
 
     def save(self):
         print('save', self.mapper.submit())
@@ -105,7 +112,7 @@ class TaskView(QWidget):
         fm.addRow(QLabel(''))
 
         fm.addRow(QLabel('Во сколько?'))
-        fm.addRow(self.create_time_choice())
+        fm.addRow(self.create_time())
 
         return fm
 

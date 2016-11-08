@@ -19,6 +19,7 @@ class TaskTableWidget(QTableView):
 
         # Columns
         self.setColumnHidden(2, True)
+        self.setColumnHidden(3, True)
 
         # headers
         self.horizontalHeader().hide()
@@ -48,6 +49,10 @@ class TaskTableWidget(QTableView):
             self.viewport().update(rect1 | rect2)
 
             self.sel_row = row
+
+    def mouseReleaseEvent(self, event):
+        index = self.indexAt(event.pos())
+        self.parentWidget().open.emit(index.row())
 
 
 class TaskList(QWidget):

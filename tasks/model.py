@@ -8,6 +8,8 @@ class TaskModel(QAbstractTableModel):
     col_completed = 0
     col_desc = 1
     col_date = 2
+    col_time = 3
+    col_count = 4
 
     def __init__(self):
         super().__init__()
@@ -21,7 +23,7 @@ class TaskModel(QAbstractTableModel):
         return len(self.tasks)
 
     def columnCount(self, parent=None, *args, **kwargs):
-        return 3
+        return TaskModel.col_count
 
     def data(self, index, role=None):
         skip_role = [Qt.DecorationRole, Qt.FontRole, Qt.TextAlignmentRole, Qt.ForegroundRole]
@@ -42,6 +44,8 @@ class TaskModel(QAbstractTableModel):
                 return task.desc
             elif col == TaskModel.col_date:
                 return task.datetime.date()
+            elif col == TaskModel.col_time:
+                return task.datetime.time()
         elif role == Qt.BackgroundRole:
             if self.selected_row == index.row():
                 return self._brush_row_selected
@@ -67,6 +71,9 @@ class TaskModel(QAbstractTableModel):
                 return True
             elif col == TaskModel.col_date:
                 self.tasks[row].datetime.setDate(value)
+                return True
+            elif col == TaskModel.col_time:
+                self.tasks[row].datetime.setTime(value)
                 return True
 
         return False
