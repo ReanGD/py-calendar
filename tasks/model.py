@@ -1,6 +1,5 @@
+from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtCore import QAbstractTableModel, QVariant, Qt
-from PyQt5.QtGui import QBrush
-from PyQt5.QtGui import QColor
 
 from tasks.storage import TaskStorage
 
@@ -14,7 +13,7 @@ class TaskModel(QAbstractTableModel):
         super().__init__()
         storage = TaskStorage()
         self.tasks = storage.load()
-        self._selected_row = None
+        self.selected_row = None
         self._brush_row = QBrush(QColor('white'))
         self._brush_row_selected = QBrush(QColor(255, 235, 160))
 
@@ -25,20 +24,9 @@ class TaskModel(QAbstractTableModel):
         return 3
 
     def data(self, index, role=None):
-        skip_role = [Qt.DecorationRole, Qt.FontRole,
-                     Qt.TextAlignmentRole, Qt.BackgroundRole,
-                     Qt.ForegroundRole]
+        skip_role = [Qt.DecorationRole, Qt.FontRole, Qt.TextAlignmentRole, Qt.ForegroundRole]
         if not index.isValid() or role in skip_role:
             return QVariant()
-
-        # if role == Qt.BackgroundRole:
-            # print(self._selected_row, ':', index.row())
-            # if self._selected_row == index.row():
-            #     return self._brush_row_selected
-            # else:
-            #     return self._brush_row
-        # else:
-        #     print(self._selected_row, ':', index.row(), '!')
 
         task = self.tasks[index.row()]
         col = index.column()
@@ -54,42 +42,41 @@ class TaskModel(QAbstractTableModel):
                 return task.desc
             elif col == TaskModel.col_date:
                 return task.datetime.date()
+        elif role == Qt.BackgroundRole:
+            if self.selected_row == index.row():
+                return self._brush_row_selected
+            else:
+                return self._brush_row
 
-        else:
-            return QVariant()
+        return QVariant()
 
     def setData(self, index, value, role=Qt.EditRole):
         if not index.isValid():
             return False
 
         col = index.column()
+        row = index.row()
+
         if role == Qt.CheckStateRole:
             if col == TaskModel.col_completed:
-                self.tasks[index.row()].completed = (value == Qt.Checked)
+                self.tasks[row].completed = (value == Qt.Checked)
                 return True
-
-        if role == Qt.EditRole:
+        elif role == Qt.EditRole:
             if col == TaskModel.col_desc:
-                self.tasks[index.row()].desc = value
+                self.tasks[row].desc = value
                 return True
             elif col == TaskModel.col_date:
-                self.tasks[index.row()].datetime.setDate(value)
+                self.tasks[row].datetime.setDate(value)
                 return True
 
         return False
 
     def removeRow(self, row, parent=None, *args, **kwargs):
-        if row >= 0 and row < self.rowCount():
+        if 0 <= row < self.rowCount():
             del self.tasks[row]
             return True
 
         return False
-
-    # def select(self, row):
-    #     self._selected_row = row
-    #     self.dataChanged.emit(self.createIndex(row, 0),
-    #                           self.createIndex(row, 1),
-    #                           [Qt.BackgroundRole])
 
     def flags(self, index):
         if index.isValid():

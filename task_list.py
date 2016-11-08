@@ -1,36 +1,21 @@
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtWidgets import QStyledItemDelegate
 from PyQt5.QtWidgets import QTableView, QWidget, QPushButton
 from PyQt5.QtWidgets import QVBoxLayout, QFormLayout, QHBoxLayout
 
 
-class Delegate(QStyledItemDelegate):
-    def __init__(self, view):
-        super().__init__()
-        self.select_row = None
-        self.view = view
-
-    # def paint(self, painter, option, index):
-    #     """ paint(self, QPainter, QStyleOptionViewItem, QModelIndex) """
-    #     is_over = option.state & QStyle.State_MouseOver
-    #     a = QStyleOptionViewItem()
-    #     if is_over and self.select_row != index.row():
-    #         self.select_index = index.row()
-    #         print(self.select_index)
-    #         self.view.select(index.row())
-    #
-    #     super().paint(painter, option, index)
-
 class TaskTableWidget(QTableView):
     def __init__(self, model):
         super().__init__()
+        # self.setStyleSheet("""
+        # QTableView::item:selected {
+        #     selection-background-color: yellow;
+        #     selection-color: black;
+        #     show-decoration-selected: 0;
+        # }
+        # """)
         self.setModel(model)
         self.setColumnWidth(0, 40)
         self.horizontalHeader().setStretchLastSection(True)
-
-        # ui->deviceTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-        # ui->deviceTableView->setSelectionMode(QAbstractItemView::SingleSelection);
 
         # Columns
         self.setColumnHidden(2, True)
@@ -39,29 +24,30 @@ class TaskTableWidget(QTableView):
         self.horizontalHeader().hide()
         self.verticalHeader().hide()
 
-        # select current row
+        # selected row
         self.setFocusPolicy(Qt.NoFocus)
+        # self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.setSelectionMode(QAbstractItemView.SingleSelection)
+        # self.selectRow(1)
         self.setMouseTracking(True)
-        self.current_row = 0
-        self._row_unselect_brush = QBrush(QColor('white'))
-        self._row_select_brush = QBrush(QColor(255, 235, 160))
-        # self.delegate = Delegate(self)
-        # self.setItemDelegate(self.delegate)
         self.sel_row = None
-        # self.setStyleSheet("""
-        # QTableView::indicator:hover {
-        #     background: #FFEBA0;
-        # }
-        # """)
 
     def mouseMoveEvent(self, event):
         index = self.indexAt(event.pos())
         if index.isValid() and self.sel_row != index.row():
-            self.sel_row = index.row()
+            row = index.row()
+            self.model().selected_row = row
 
-    def mouseReleaseEvent(self, event):
-        index = self.indexAt(event.pos())
-        self.parentWidget().open.emit(index.row())
+            if self.sel_row is not None:
+                rect1 = self.visualRect(self.model().createIndex(self.sel_row, 0))
+                rect2 = self.visualRect(self.model().createIndex(self.sel_row, 1))
+                self.viewport().update(rect1 | rect2)
+
+            rect1 = self.visualRect(self.model().createIndex(row, 0))
+            rect2 = self.visualRect(self.model().createIndex(row, 1))
+            self.viewport().update(rect1 | rect2)
+
+            self.sel_row = row
 
 
 class TaskList(QWidget):
