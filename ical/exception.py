@@ -1,0 +1,2 @@
+class ICalException(Exception):
+    pass

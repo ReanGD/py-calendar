@@ -4,13 +4,14 @@ import icalendar
 from typing import List
 
 from ical.event import Entity, Event
+from ical.exception import ICalException
 
 
 class Database(object):
     def __init__(self, path: str):
         super().__init__()
         if not os.path.isfile(path):
-            raise Exception('Calendar file "{}" is not exists'.format(path))
+            raise ICalException('Calendar file "{}" is not exists'.format(path))
 
         self._calendar_path = path
         self._data = dict()
@@ -36,10 +37,10 @@ class Database(object):
         try:
             self._data = Database._load(self._calendar_path)
         except Exception as e:
-            raise Exception('Failed to load calendar "{}": {}'.format(self._calendar_path, e))
+            raise ICalException('Failed to load calendar "{}": {}'.format(self._calendar_path, e))
 
-    def enumerate(self, until: datetime) -> List[Event]:
+    def enumerate(self, before: datetime) -> List[Event]:
         events = []
         for it in self._data.values():
-            events.extend(it.enumerate(until))
+            events.extend(it.enumerate(before))
         return events
