@@ -20,8 +20,9 @@ class TestDatabase(TestCase):
         return cal.enumerate(datetime(2017, 1, 1))
 
     def test_failed_path(self):
+        cal = Database('error.ics')
         with self.assertRaises(ICalException):
-            Database('error.ics')
+            cal.load()
 
     def test_failed_file(self):
         cal = Database(TestDatabase.db_path('error'))

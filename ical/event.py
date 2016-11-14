@@ -27,7 +27,7 @@ class Entity(object):
         super().__init__()
         self.root = None
         self.rrule = None
-        self.children = dict()
+        self.children = {}
         self.add(obj)
 
     def add(self, obj: icalendar.cal.Component):
