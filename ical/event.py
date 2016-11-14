@@ -2,19 +2,24 @@ import icalendar
 import dateutil.rrule as rrule
 from datetime import date, datetime, time
 
+from dateutil.tz import tzlocal
+
 from ical.exception import ICalException
 
 
-def normalize_date_field(val) -> datetime:
+_localtimezone = tzlocal()
+
+
+def _normalize_date(val) -> datetime:
     if val is None:
         return None
     elif isinstance(val, date) and not isinstance(val, datetime):
-        return datetime(val.year, val.month, val.day)
+        return datetime(val.year, val.month, val.day, tzinfo=_localtimezone)
     elif isinstance(val, time):
         raise ICalException('data field exist only time without date')
 
-    if val.tzinfo:
-        val = val.replace(tzinfo=None)
+    if not val.tzinfo:
+        val = val.replace(tzinfo=_localtimezone)
 
     return val
 
@@ -45,7 +50,8 @@ class Entity(object):
             self.children[obj.decoded('RECURRENCE-ID')] = obj
 
     def enumerate(self, before: datetime):
-        dtstart = normalize_date_field(self.root.decoded('DTSTART', None))
+        dtstart = _normalize_date(self.root.decoded('DTSTART', None))
+        before = _normalize_date(before)
 
         if len(self.children) == 0:
             if dtstart is None or dtstart < before:
@@ -81,7 +87,7 @@ class Event(object):
         if self._dtstart is not None:
             return self._dtstart
         else:
-            return normalize_date_field(self.data.decoded('DTSTART', None))
+            return _normalize_date(self.data.decoded('DTSTART', None))
 
     @property
     def status(self) -> icalendar.prop.vText:
@@ -89,13 +95,11 @@ class Event(object):
         return self.data.get('STATUS')
 
     @property
-    def is_completed(self):
-        return bool(self.completed_at) or \
-               self.status in ('CANCELLED', 'COMPLETED')
+    def completed_at(self) -> datetime:
+        """This property defines the date and time that a to-do was actually completed."""
+        return _normalize_date(self.data.decoded('COMPLETED', None))
 
     @property
-    def completed_at(self):
-        if self.data.get('COMPLETED', None) is None:
-            return None
-        else:
-            return self.data.decoded('COMPLETED')
+    def is_completed(self) -> bool:
+        return self.status in ('CANCELLED', 'COMPLETED') or bool(self.completed_at)
+
