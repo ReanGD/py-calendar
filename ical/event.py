@@ -1,9 +1,7 @@
 import icalendar
 import dateutil.rrule as rrule
-from datetime import date, datetime, time
-
 from dateutil.tz import tzlocal
-
+from datetime import date, datetime, time
 from ical.exception import ICalException
 
 
@@ -76,10 +74,21 @@ class Event(object):
         self.data = event
         self._dtstart = dtstart
 
+    def _set_field(self, name, value):
+        if name in self.data:
+            del(self.data[name])
+        if value is not None and value is not '':
+            self.data.add(name, value)
+
     @property
     def summary(self) -> icalendar.prop.vText:
         """This property defines a short summary or subject for the calendar component."""
         return self.data.get('SUMMARY', icalendar.prop.vText(''))
+
+    @summary.setter
+    def summary(self, value: str):
+        """This property defines a short summary or subject for the calendar component."""
+        self._set_field('summary', value)
 
     @property
     def dtstart(self) -> datetime:
@@ -89,10 +98,20 @@ class Event(object):
         else:
             return _normalize_date(self.data.decoded('DTSTART', None))
 
+    @dtstart.setter
+    def dtstart(self, value: datetime):
+        """This property specifies when the calendar component begins."""
+        self._set_field('dtstart', value)
+
     @property
     def status(self) -> icalendar.prop.vText:
         """This property defines the overall status or confirmation for the calendar component."""
         return self.data.get('STATUS')
+
+    @status.setter
+    def status(self, value: str):
+        """This property defines the overall status or confirmation for the calendar component."""
+        self._set_field('status', value)
 
     @property
     def completed_at(self) -> datetime:
@@ -103,3 +122,14 @@ class Event(object):
     def is_completed(self) -> bool:
         return self.status in ('CANCELLED', 'COMPLETED') or bool(self.completed_at)
 
+    @is_completed.setter
+    def is_completed(self, value: bool):
+        if value:
+            self._set_field('COMPLETED', datetime.now(_localtimezone))
+            self._set_field('PERCENT-COMPLETE', 100)
+            self.status = 'COMPLETED'
+        else:
+            for name in ['COMPLETED', 'PERCENT-COMPLETE']:
+                if name in self.data:
+                    del(self.data[name])
+            self.status = 'NEEDS-ACTION'
