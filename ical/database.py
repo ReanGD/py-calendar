@@ -12,7 +12,7 @@ from ical.exception import ICalException
 class Database(object):
     def __init__(self, path: str):
         super().__init__()
-        self._calendar_path = path
+        self.path = path
         self._data = {}
 
     @staticmethod
@@ -38,9 +38,9 @@ class Database(object):
 
     def load(self):
         try:
-            self._data = Database._load(self._calendar_path)
+            self._data = Database._load(self.path)
         except Exception as e:
-            raise ICalException('Failed to load calendar "{}": {}'.format(self._calendar_path, e))
+            raise ICalException('Failed to load calendar "{}": {}'.format(self.path, e))
 
     @staticmethod
     def _save(path: str, data: Dict[str, Entity]):
@@ -71,9 +71,9 @@ class Database(object):
 
     def save(self):
         try:
-            Database._save(self._calendar_path, self._data)
+            Database._save(self.path, self._data)
         except Exception as e:
-            raise ICalException('Failed to save calendar "{}": {}'.format(self._calendar_path, e))
+            raise ICalException('Failed to save calendar "{}": {}'.format(self.path, e))
 
     def enumerate(self, before: datetime) -> List[Event]:
         events = []

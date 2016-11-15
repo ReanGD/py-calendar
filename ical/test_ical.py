@@ -29,7 +29,7 @@ class TestDatabase(TestCase):
         with self.assertRaises(ICalException):
             cal.load()
 
-    def test_todo(self):
+    def test_read(self):
         for it in TestDatabase.read_db('todo'):
             if it.summary == 'only summary':
                 self.assertIsNone(it.dtstart)
@@ -58,3 +58,6 @@ class TestDatabase(TestCase):
                 self.assertTrue(it.is_completed)
             else:
                 self.fail('unknown item')
+
+    def test_change(self):
+        pass

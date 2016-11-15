@@ -23,7 +23,7 @@ def _normalize_date(val) -> datetime:
 
 
 class Entity(object):
-    def __init__(self, obj):
+    def __init__(self, obj: icalendar.cal.Component = None):
         super().__init__()
         self.root = None
         self.rrule = None
