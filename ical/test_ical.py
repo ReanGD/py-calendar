@@ -1,4 +1,4 @@
-from os import path
+import os
 from datetime import datetime
 from unittest import TestCase
 from dateutil.tz import tzlocal
@@ -10,8 +10,8 @@ from ical.exception import ICalException
 class TestDatabase(TestCase):
     @staticmethod
     def db_path(calendar_name):
-        root_path = path.dirname(path.dirname(path.realpath(__file__)))
-        return path.join(root_path, 'test_data', calendar_name + '.ics')
+        root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        return os.path.join(root_path, 'test_data', calendar_name + '.ics')
 
     @staticmethod
     def read_db(calendar_name):

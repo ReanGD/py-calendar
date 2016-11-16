@@ -73,12 +73,19 @@ class Event(object):
         self.root = root
         self.data = event
         self._dtstart = dtstart
+        self._changed = False
 
     def _set_field(self, name, value):
         if name in self.data:
             del(self.data[name])
         if value is not None and value is not '':
             self.data.add(name, value)
+
+    def pre_save(self):
+        if self._changed:
+            self._set_field('LAST-MODIFIED', datetime.now(_localtimezone))
+
+        return self._changed
 
     @property
     def summary(self) -> icalendar.prop.vText:
@@ -88,7 +95,7 @@ class Event(object):
     @summary.setter
     def summary(self, value: str):
         """This property defines a short summary or subject for the calendar component."""
-        self._set_field('summary', value)
+        self._set_field('SUMMARY', value)
 
     @property
     def dtstart(self) -> datetime:
@@ -101,7 +108,7 @@ class Event(object):
     @dtstart.setter
     def dtstart(self, value: datetime):
         """This property specifies when the calendar component begins."""
-        self._set_field('dtstart', value)
+        self._set_field('DTSTART', value)
 
     @property
     def status(self) -> icalendar.prop.vText:
@@ -111,7 +118,7 @@ class Event(object):
     @status.setter
     def status(self, value: str):
         """This property defines the overall status or confirmation for the calendar component."""
-        self._set_field('status', value)
+        self._set_field('STATUS', value)
 
     @property
     def completed_at(self) -> datetime:

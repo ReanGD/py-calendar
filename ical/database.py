@@ -49,7 +49,7 @@ class Database(object):
             exists = set()
             for index, component in enumerate(cal.subcomponents):
                 uid = component.get('UID')
-                if uid in data:
+                if uid in data and data[uid].pre_save():
                     exists.add(uid)
                     cal.subcomponents[index] = data[uid].root
 
@@ -64,6 +64,7 @@ class Database(object):
             cal.add('prodid', 'py-calendar')
             cal.add('version', '2.0')
             for it in data.values():
+                it.pre_save()
                 cal.add_component(it.root)
 
             with AtomicWriter(path).open() as f:
